@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.13.0",
+    "prisma": "^5.13.0",
     "@remix-run/node": "^2.9.0",
     "@remix-run/react": "^2.9.0",
     "@remix-run/serve": "^2.9.0",
@@ -35,7 +36,6 @@
     "@types/nodemailer": "^6.4.14",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "prisma": "^5.13.0",
     "typescript": "^5.4.5",
     "vite": "^5.2.11",
     "vite-tsconfig-paths": "^4.3.2"
