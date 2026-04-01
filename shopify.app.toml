@@ -2,7 +2,7 @@
 
 client_id = "2c359050fdb50d3982ff68362af8e700"
 name = "EnquireIt"
-application_url = "https://ben-barcelona-certain-joseph.trycloudflare.com"
+application_url = "https://enquireit-production.up.railway.app"
 embedded = true
 
 [build]
@@ -20,9 +20,9 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://ben-barcelona-certain-joseph.trycloudflare.com/auth/callback",
-  "https://ben-barcelona-certain-joseph.trycloudflare.com/auth/shopify/callback",
-  "https://ben-barcelona-certain-joseph.trycloudflare.com/api/auth/callback"
+  "https://enquireit-production.up.railway.app/auth/callback",
+  "https://enquireit-production.up.railway.app/auth/shopify/callback",
+  "https://enquireit-production.up.railway.app/api/auth/callback"
 ]
 
 [pos]
