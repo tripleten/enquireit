@@ -1,0 +1,42 @@
+{
+  "name": "shopify-enquiry-modal-app",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "remix vite:build",
+    "dev": "shopify app dev",
+    "dev:server": "remix vite:dev",
+    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "setup": "prisma generate && prisma migrate deploy",
+    "start": "remix-serve build/server/index.js",
+    "typecheck": "tsc"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18.20.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.13.0",
+    "@remix-run/node": "^2.9.0",
+    "@remix-run/react": "^2.9.0",
+    "@remix-run/serve": "^2.9.0",
+    "@shopify/app-bridge-react": "^4.1.6",
+    "@shopify/polaris": "^13.1.0",
+    "@shopify/shopify-app-remix": "^3.1.0",
+    "@shopify/shopify-app-session-storage-prisma": "^5.0.4",
+    "isbot": "^4.1.0",
+    "nodemailer": "^6.9.13",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "^2.9.0",
+    "@types/nodemailer": "^6.4.14",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "prisma": "^5.13.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11",
+    "vite-tsconfig-paths": "^4.3.2"
+  }
+}

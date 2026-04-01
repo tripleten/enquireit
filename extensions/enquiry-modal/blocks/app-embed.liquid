@@ -1,0 +1,60 @@
+{% comment %}
+  Enquiry Modal — App Embed Block
+  This block is injected into the storefront via the Shopify Theme App Extension.
+  It sets the global configuration variables and loads the modal assets.
+{% endcomment %}
+
+<script>
+  window.ENQUIRY_APP_URL = {{ settings.app_url | default: "" | json }};
+  window.ENQUIRY_SHOP_DOMAIN = {{ shop.permanent_domain | json }};
+</script>
+
+{{ 'enquiry-modal.css' | asset_url | stylesheet_tag }}
+{{ 'enquiry-modal.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Enquiry Modal",
+  "target": "body",
+  "javascript": "enquiry-modal.js",
+  "stylesheet": "enquiry-modal.css",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "The Enquiry Modal lets shoppers submit product enquiries from any page on your storefront. Add **data-enquiry-trigger** to any button or link to open the modal."
+    },
+    {
+      "type": "text",
+      "id": "app_url",
+      "label": "App URL",
+      "info": "Your Shopify app's public URL (e.g. https://your-app.fly.dev). This is set automatically when you deploy."
+    },
+    {
+      "type": "header",
+      "content": "Modal Appearance"
+    },
+    {
+      "type": "text",
+      "id": "modal_title",
+      "label": "Modal Title",
+      "default": "Product Enquiry",
+      "info": "The title shown at the top of the enquiry modal."
+    },
+    {
+      "type": "text",
+      "id": "modal_subtitle",
+      "label": "Modal Subtitle",
+      "default": "Fill in your details and we'll get back to you.",
+      "info": "Subtitle text shown below the modal title."
+    },
+    {
+      "type": "header",
+      "content": "Usage Instructions"
+    },
+    {
+      "type": "paragraph",
+      "content": "To add an enquiry button anywhere in your theme, add the attribute **data-enquiry-trigger** to any HTML element. To pre-fill a specific product, use **data-enquiry-trigger=\"product-handle\"** where 'product-handle' is the product's URL handle."
+    }
+  ]
+}
+{% endschema %}
