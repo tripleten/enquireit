@@ -9,7 +9,7 @@
     "dev:server": "remix vite:dev",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "setup": "prisma generate && prisma migrate deploy",
-    "start": "prisma migrate deploy && remix-serve build/server/index.js",
+    "start": "prisma db push && remix-serve build/server/index.js",
     "typecheck": "tsc"
   },
   "type": "module",
