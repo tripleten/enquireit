@@ -24,6 +24,7 @@
   var autocompleteIndex = -1;
   var autocompleteResults = [];
   var isSubmitting = false;
+  var globalTriggerHandlersBound = false;
 
   // ── Utility Functions ───────────────────────────────────────────────────────
 
@@ -707,9 +708,37 @@
     });
   }
 
+  function findTriggerElement(target) {
+    if (!target || typeof target.closest !== "function") return null;
+    return target.closest("[data-enquiry-trigger]");
+  }
+
+  function bindGlobalTriggerHandlers() {
+    if (globalTriggerHandlersBound) return;
+    globalTriggerHandlersBound = true;
+
+    document.addEventListener("click", function (e) {
+      var trigger = findTriggerElement(e.target);
+      if (!trigger) return;
+
+      e.preventDefault();
+      openModal(trigger.dataset.enquiryTrigger || "");
+    });
+
+    document.addEventListener("keydown", function (e) {
+      var trigger = findTriggerElement(e.target);
+      if (!trigger) return;
+      if (e.key !== "Enter" && e.key !== " ") return;
+
+      e.preventDefault();
+      openModal(trigger.dataset.enquiryTrigger || "");
+    });
+  }
+
   // ── Init ─────────────────────────────────────────────────────────────────────
 
   function init() {
+    bindGlobalTriggerHandlers();
     bindTriggers();
   }
 
