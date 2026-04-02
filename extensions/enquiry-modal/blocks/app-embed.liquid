@@ -5,12 +5,9 @@
 {% endcomment %}
 
 <script>
-  window.ENQUIRY_APP_URL = {{ settings.app_url | default: "" | json }};
+  window.ENQUIRY_APP_URL = {{ settings.app_url | default: "https://enquireit-production.up.railway.app" | json }};
   window.ENQUIRY_SHOP_DOMAIN = {{ shop.permanent_domain | json }};
 </script>
-
-{{ 'enquiry-modal.css' | asset_url | stylesheet_tag }}
-{{ 'enquiry-modal.js' | asset_url | script_tag }}
 
 {% schema %}
 {
