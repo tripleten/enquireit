@@ -2,7 +2,7 @@
 
 client_id = "2c359050fdb50d3982ff68362af8e700"
 name = "EnquireIt"
-application_url = "https://enquireit-production.up.railway.app"
+application_url = "https://enquireit-production.up.railway.app/app"
 embedded = true
 
 [build]
