@@ -52,7 +52,7 @@ SHOPIFY_API_KEY=your_api_key_here
 SHOPIFY_API_SECRET=your_api_secret_here
 SHOPIFY_APP_URL=https://your-ngrok-or-deployed-url.example.com
 SCOPES=read_products
-DATABASE_URL="file:./dev.db"
+DATABASE_URL=postgresql://username:password@host:5432/database
 ```
 
 ### 4. Set Up the Database
@@ -184,9 +184,28 @@ fly deploy
 ### Deploy with Railway
 
 1. Connect your GitHub repo at [railway.app](https://railway.app)
-2. Add a SQLite volume or switch to PostgreSQL
-3. Set environment variables in the Railway dashboard
-4. Deploy
+2. Add a **PostgreSQL** service and copy the `DATABASE_URL` it provides
+3. Set these environment variables in the Railway dashboard:
+
+```env
+SHOPIFY_API_KEY=your_api_key_here
+SHOPIFY_API_SECRET=your_api_secret_here
+SHOPIFY_APP_URL=https://your-app.up.railway.app
+SCOPES=read_products
+DATABASE_URL=postgresql://username:password@host:5432/railway
+```
+
+4. Use `npm start` as the start command. This app now runs `prisma migrate deploy`
+   before starting the Remix server, so your database schema is applied on boot.
+5. Commit your `prisma/migrations` directory to Git before deploying. Railway needs
+   those migration files in the build context.
+6. After Railway deploys successfully, run:
+
+```bash
+shopify app deploy
+```
+
+This pushes the updated app URL and redirect URLs from `shopify.app.toml` to Shopify.
 
 ### Update shopify.app.toml
 

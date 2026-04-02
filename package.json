@@ -8,8 +8,8 @@
     "dev": "shopify app dev",
     "dev:server": "remix vite:dev",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
-    "setup": "prisma generate && prisma migrate deploy",
-    "start": "remix-serve build/server/index.js",
+    "setup": "prisma migrate deploy",
+    "start": "npm run setup && remix-serve build/server/index.js",
     "typecheck": "tsc"
   },
   "type": "module",

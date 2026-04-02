@@ -4,5 +4,7 @@ build
 .env
 prisma/dev.db
 prisma/dev.db-journal
-prisma/migrations
 .shopify
+app/**/*.js
+app/**/*.jsx
+vite.config.js
