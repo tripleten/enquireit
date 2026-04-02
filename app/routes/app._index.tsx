@@ -9,7 +9,6 @@ import {
   BlockStack,
   InlineStack,
   Box,
-  Badge,
   Divider,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
@@ -19,9 +18,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
 
-  const [totalEnquiries, newEnquiries, recentEnquiries] = await Promise.all([
+  const [totalEnquiries, recentEnquiries] = await Promise.all([
     prisma.enquiry.count({ where: { shop } }),
-    prisma.enquiry.count({ where: { shop, status: "new" } }),
     prisma.enquiry.findMany({
       where: { shop },
       orderBy: { createdAt: "desc" },
@@ -31,7 +29,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         name: true,
         email: true,
         productTitle: true,
-        status: true,
         createdAt: true,
       },
     }),
@@ -39,7 +36,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   return {
     totalEnquiries,
-    newEnquiries,
     recentEnquiries: recentEnquiries.map((e) => ({
       ...e,
       createdAt: e.createdAt.toISOString(),
@@ -48,55 +44,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function Index() {
-  const { totalEnquiries, newEnquiries, recentEnquiries } =
-    useLoaderData<typeof loader>();
+  const { totalEnquiries, recentEnquiries } = useLoaderData<typeof loader>();
 
   return (
     <Page title="Enquiry Modal — Dashboard">
       <BlockStack gap="500">
         <Layout>
           <Layout.Section>
-            <InlineStack gap="400">
-              <Box
-                background="bg-surface"
-                padding="500"
-                borderRadius="200"
-                borderWidth="025"
-                borderColor="border"
-                minWidth="200px"
-              >
-                <BlockStack gap="200">
-                  <Text variant="headingLg" as="h2">
-                    {totalEnquiries}
-                  </Text>
-                  <Text variant="bodyMd" as="p" tone="subdued">
-                    Total Enquiries
-                  </Text>
-                </BlockStack>
-              </Box>
-              <Box
-                background="bg-surface"
-                padding="500"
-                borderRadius="200"
-                borderWidth="025"
-                borderColor="border"
-                minWidth="200px"
-              >
-                <BlockStack gap="200">
-                  <InlineStack gap="200" align="center">
-                    <Text variant="headingLg" as="h2">
-                      {newEnquiries}
-                    </Text>
-                    {newEnquiries > 0 && (
-                      <Badge tone="attention">New</Badge>
-                    )}
-                  </InlineStack>
-                  <Text variant="bodyMd" as="p" tone="subdued">
-                    Unread Enquiries
-                  </Text>
-                </BlockStack>
-              </Box>
-            </InlineStack>
+            <Box
+              background="bg-surface"
+              padding="500"
+              borderRadius="200"
+              borderWidth="025"
+              borderColor="border"
+              minWidth="200px"
+            >
+              <BlockStack gap="200">
+                <Text variant="headingLg" as="h2">
+                  {totalEnquiries}
+                </Text>
+                <Text variant="bodyMd" as="p" tone="subdued">
+                  Total Enquiries
+                </Text>
+              </BlockStack>
+            </Box>
           </Layout.Section>
 
           <Layout.Section>
@@ -136,18 +107,9 @@ export default function Index() {
                                   : ""}
                               </Text>
                             </BlockStack>
-                            <InlineStack gap="200" align="center">
-                              <Badge
-                                tone={
-                                  enquiry.status === "new" ? "attention" : "success"
-                                }
-                              >
-                                {enquiry.status === "new" ? "New" : "Reviewed"}
-                              </Badge>
-                              <Text variant="bodySm" as="p" tone="subdued">
-                                {new Date(enquiry.createdAt).toLocaleDateString()}
-                              </Text>
-                            </InlineStack>
+                            <Text variant="bodySm" as="p" tone="subdued">
+                              {new Date(enquiry.createdAt).toLocaleDateString()}
+                            </Text>
                           </InlineStack>
                         </Box>
                       </div>
