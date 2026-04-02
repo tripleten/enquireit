@@ -44,6 +44,7 @@ model Settings {
 model Enquiry {
   id            String   @id @default(cuid())
   shop          String
+  productId     String?
   productHandle String?
   productTitle  String?
   quantity      Int?

@@ -11,6 +11,10 @@
 
   var APP_URL = (window.ENQUIRY_APP_URL || "").replace(/\/$/, "");
   var SHOP_DOMAIN = window.ENQUIRY_SHOP_DOMAIN || "";
+  var MODAL_TITLE = window.ENQUIRY_MODAL_TITLE || "Product Enquiry";
+  var MODAL_SUBTITLE =
+    window.ENQUIRY_MODAL_SUBTITLE ||
+    "Fill in your details and we'll get back to you.";
   var DEBOUNCE_MS = 300;
   var MIN_SEARCH_CHARS = 2;
 
@@ -18,7 +22,7 @@
 
   var modalEl = null;
   var overlayEl = null;
-  var currentProductHandle = null;
+  var currentProductId = null;
   var currentProductTitle = null;
   var searchDebounceTimer = null;
   var autocompleteIndex = -1;
@@ -67,8 +71,8 @@
       '<div class="em-modal" id="em-modal">',
       '  <div class="em-modal__header">',
       '    <div>',
-      '      <h2 class="em-modal__title" id="em-modal-title">Product Enquiry</h2>',
-      '      <p class="em-modal__subtitle">Fill in your details and we\'ll get back to you.</p>',
+      '      <h2 class="em-modal__title" id="em-modal-title">' + escapeHtml(MODAL_TITLE) + '</h2>',
+      '      <p class="em-modal__subtitle">' + escapeHtml(MODAL_SUBTITLE) + '</p>',
       '    </div>',
       '    <button class="em-modal__close" id="em-close-btn" type="button" aria-label="Close enquiry modal">',
       '      &#x2715;',
@@ -91,7 +95,7 @@
       '              aria-controls="em-autocomplete-dropdown"',
       '              aria-expanded="false"',
       '            />',
-      '            <input type="hidden" id="em-product-handle" name="productHandle" />',
+      '            <input type="hidden" id="em-product-id" name="productId" />',
       '            <div class="em-autocomplete__dropdown" id="em-autocomplete-dropdown" role="listbox"></div>',
       '          </div>',
       '        </div>',
@@ -195,28 +199,38 @@
 
   // ── Open / Close ─────────────────────────────────────────────────────────────
 
-  function openModal(productHandle) {
+  function normalizePrefillProduct(productRef, productTitle) {
+    if (!productRef) return { id: "", title: "" };
+
+    if (typeof productRef === "object") {
+      return {
+        id: productRef.id ? String(productRef.id).trim() : "",
+        title: productRef.title ? String(productRef.title).trim() : "",
+      };
+    }
+
+    return {
+      id: String(productRef).trim(),
+      title: productTitle ? String(productTitle).trim() : "",
+    };
+  }
+
+  function openModal(productRef, productTitle) {
     ensureModal();
     resetForm();
 
-    // Pre-fill product if handle supplied
-    if (productHandle && productHandle.trim() !== "") {
-      var handle = productHandle.trim();
-      currentProductHandle = handle;
+    var prefillProduct = normalizePrefillProduct(productRef, productTitle);
+
+    // Pre-fill product if id supplied
+    if (prefillProduct.id) {
+      currentProductId = prefillProduct.id;
+      currentProductTitle = prefillProduct.title || null;
       var productInput = overlayEl.querySelector("#em-product");
-      var handleInput = overlayEl.querySelector("#em-product-handle");
+      var productIdInput = overlayEl.querySelector("#em-product-id");
 
-      // Set handle immediately, then try to fetch title
-      handleInput.value = handle;
-      productInput.value = handle; // fallback until title fetched
+      productIdInput.value = prefillProduct.id;
+      productInput.value = prefillProduct.title || prefillProduct.id;
       productInput.disabled = true;
-
-      fetchProductTitle(handle, function (title) {
-        if (title) {
-          productInput.value = title;
-          currentProductTitle = title;
-        }
-      });
     }
 
     // Show modal
@@ -226,7 +240,7 @@
     // Focus first input after transition
     setTimeout(function () {
       var firstInput = overlayEl.querySelector(
-        productHandle ? "#em-quantity" : "#em-product"
+        prefillProduct.id ? "#em-quantity" : "#em-product"
       );
       if (firstInput) firstInput.focus();
     }, 50);
@@ -240,7 +254,7 @@
   }
 
   function resetForm() {
-    currentProductHandle = null;
+    currentProductId = null;
     currentProductTitle = null;
     autocompleteResults = [];
     autocompleteIndex = -1;
@@ -250,13 +264,13 @@
     if (form) form.reset();
 
     var productInput = overlayEl && overlayEl.querySelector("#em-product");
-    var handleInput = overlayEl && overlayEl.querySelector("#em-product-handle");
+    var productIdInput = overlayEl && overlayEl.querySelector("#em-product-id");
     if (productInput) {
       productInput.disabled = false;
       productInput.value = "";
       productInput.classList.remove("em-input--error");
     }
-    if (handleInput) handleInput.value = "";
+    if (productIdInput) productIdInput.value = "";
 
     // Clear errors
     var errorEls = overlayEl && overlayEl.querySelectorAll(".em-field-error");
@@ -288,28 +302,6 @@
     var successContainer = overlayEl && overlayEl.querySelector("#em-success-container");
     if (formContainer) formContainer.style.display = "";
     if (successContainer) successContainer.style.display = "none";
-  }
-
-  // ── Product Title Lookup ─────────────────────────────────────────────────────
-
-  function fetchProductTitle(handle, callback) {
-    fetch("/search/suggest.json?q=" + encodeURIComponent(handle) + "&resources[type]=product&resources[options][fields]=title,handle")
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        var products =
-          data &&
-          data.resources &&
-          data.resources.results &&
-          data.resources.results.products;
-        if (products && products.length > 0) {
-          // Find exact handle match
-          var match = products.find(function (p) { return p.handle === handle; });
-          callback((match || products[0]).title || null);
-        } else {
-          callback(null);
-        }
-      })
-      .catch(function () { callback(null); });
   }
 
   // ── Autocomplete ─────────────────────────────────────────────────────────────
@@ -393,7 +385,7 @@
           '<div class="em-autocomplete__item"',
           ' role="option"',
           ' data-index="' + idx + '"',
-          ' data-handle="' + escapeHtml(product.handle) + '"',
+          ' data-id="' + escapeHtml(product.id ? String(product.id) : "") + '"',
           ' data-title="' + escapeHtml(product.title) + '"',
           ' tabindex="-1"',
           '>',
@@ -411,20 +403,20 @@
     dropdown.querySelectorAll(".em-autocomplete__item").forEach(function (item) {
       item.addEventListener("mousedown", function (e) {
         e.preventDefault(); // Don't blur the input
-        selectProduct(item.dataset.handle, item.dataset.title);
+        selectProduct(item.dataset.id, item.dataset.title);
       });
     });
   }
 
-  function selectProduct(handle, title) {
+  function selectProduct(productId, title) {
     var productInput = overlayEl.querySelector("#em-product");
-    var handleInput = overlayEl.querySelector("#em-product-handle");
+    var productIdInput = overlayEl.querySelector("#em-product-id");
 
-    if (productInput) productInput.value = title || handle;
-    if (handleInput) handleInput.value = handle;
+    if (productInput) productInput.value = title || productId;
+    if (productIdInput) productIdInput.value = productId;
 
-    currentProductHandle = handle;
-    currentProductTitle = title || handle;
+    currentProductId = productId || null;
+    currentProductTitle = title || productId;
 
     closeAutocomplete();
   }
@@ -483,9 +475,9 @@
       var query = this.value.trim();
 
       // Clear handle if user types something new
-      var handleInput = overlayEl.querySelector("#em-product-handle");
-      if (handleInput) handleInput.value = "";
-      currentProductHandle = null;
+      var productIdInput = overlayEl.querySelector("#em-product-id");
+      if (productIdInput) productIdInput.value = "";
+      currentProductId = null;
       currentProductTitle = null;
 
       if (query.length < MIN_SEARCH_CHARS) {
@@ -517,7 +509,7 @@
         if (autocompleteIndex >= 0 && autocompleteResults[autocompleteIndex]) {
           e.preventDefault();
           var item = autocompleteResults[autocompleteIndex];
-          selectProduct(item.handle, item.title);
+          selectProduct(item.id ? String(item.id) : "", item.title);
         }
       } else if (e.key === "Escape") {
         closeAutocomplete();
@@ -587,7 +579,7 @@
     submitError.style.display = "none";
 
     var productInput = overlayEl.querySelector("#em-product");
-    var handleInput = overlayEl.querySelector("#em-product-handle");
+    var productIdInput = overlayEl.querySelector("#em-product-id");
     var quantityInput = overlayEl.querySelector("#em-quantity");
     var nameInput = overlayEl.querySelector("#em-name");
     var emailInput = overlayEl.querySelector("#em-email");
@@ -596,7 +588,7 @@
 
     var payload = {
       shop: SHOP_DOMAIN,
-      productHandle: handleInput.value || currentProductHandle || null,
+      productId: productIdInput.value || currentProductId || null,
       productTitle:
         currentProductTitle ||
         productInput.value ||
@@ -690,8 +682,9 @@
 
       el.addEventListener("click", function (e) {
         e.preventDefault();
-        var handle = el.dataset.enquiryTrigger || "";
-        openModal(handle);
+        var productId = el.dataset.enquiryTrigger || "";
+        var productTitle = el.dataset.enquiryProductTitle || "";
+        openModal(productId, productTitle);
       });
 
       // Keyboard accessibility
@@ -701,8 +694,9 @@
       el.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          var handle = el.dataset.enquiryTrigger || "";
-          openModal(handle);
+          var productId = el.dataset.enquiryTrigger || "";
+          var productTitle = el.dataset.enquiryProductTitle || "";
+          openModal(productId, productTitle);
         }
       });
     });
@@ -722,7 +716,10 @@
       if (!trigger) return;
 
       e.preventDefault();
-      openModal(trigger.dataset.enquiryTrigger || "");
+      openModal(
+        trigger.dataset.enquiryTrigger || "",
+        trigger.dataset.enquiryProductTitle || "",
+      );
     });
 
     document.addEventListener("keydown", function (e) {
@@ -731,7 +728,10 @@
       if (e.key !== "Enter" && e.key !== " ") return;
 
       e.preventDefault();
-      openModal(trigger.dataset.enquiryTrigger || "");
+      openModal(
+        trigger.dataset.enquiryTrigger || "",
+        trigger.dataset.enquiryProductTitle || "",
+      );
     });
   }
 

@@ -45,6 +45,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const {
     shop,
+    productId,
     productHandle,
     productTitle,
     quantity,
@@ -73,6 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const enquiry = await prisma.enquiry.create({
       data: {
         shop,
+        productId: productId ? String(productId) : null,
         productHandle: productHandle || null,
         productTitle: productTitle || null,
         quantity: quantity ? parseInt(quantity, 10) : null,
@@ -108,7 +110,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         });
 
         const productLine = productTitle
-          ? `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Product</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${productTitle}${productHandle ? ` (${productHandle})` : ""}</td></tr>`
+          ? `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Product</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${productTitle}${productId ? ` (ID: ${productId})` : productHandle ? ` (${productHandle})` : ""}</td></tr>`
           : "";
 
         const quantityLine = quantity

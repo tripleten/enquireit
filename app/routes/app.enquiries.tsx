@@ -1,4 +1,8 @@
-import { type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import {
+  type LoaderFunctionArgs,
+  type ActionFunctionArgs,
+  json,
+} from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
@@ -12,10 +16,13 @@ import {
   EmptyState,
   Box,
   Select,
+  InlineStack,
+  Modal,
+  Divider,
 } from "@shopify/polaris";
+import { useMemo, useState } from "react";
 import { authenticate } from "../shopify.server";
 import { prisma } from "../db.server";
-import { useState } from "react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -24,7 +31,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const statusFilter = url.searchParams.get("status") || "all";
 
-  const whereClause: any = { shop };
+  const whereClause: { shop: string; status?: string } = { shop };
   if (statusFilter !== "all") {
     whereClause.status = statusFilter;
   }
@@ -35,13 +42,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     take: 100,
   });
 
-  return {
-    enquiries: enquiries.map((e) => ({
-      ...e,
-      createdAt: e.createdAt.toISOString(),
+  return json({
+    enquiries: enquiries.map((enquiry) => ({
+      ...enquiry,
+      createdAt: enquiry.createdAt.toISOString(),
     })),
     statusFilter,
-  };
+  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -49,29 +56,66 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const shop = session.shop;
 
   const formData = await request.formData();
-  const enquiryId = formData.get("enquiryId") as string;
-  const newStatus = formData.get("status") as string;
+  const intent = formData.get("intent");
+  const enquiryId = formData.get("enquiryId");
 
-  if (enquiryId && newStatus) {
+  if (typeof enquiryId !== "string" || !enquiryId) {
+    return json({ success: false, error: "Missing enquiry id." }, { status: 400 });
+  }
+
+  if (intent === "delete") {
+    await prisma.enquiry.deleteMany({
+      where: { id: enquiryId, shop },
+    });
+
+    return json({ success: true });
+  }
+
+  const newStatus = formData.get("status");
+  if (typeof newStatus === "string" && newStatus) {
     await prisma.enquiry.updateMany({
       where: { id: enquiryId, shop },
       data: { status: newStatus },
     });
+
+    return json({ success: true });
   }
 
-  return { success: true };
+  return json({ success: false, error: "Invalid action." }, { status: 400 });
 };
 
 export default function Enquiries() {
   const { enquiries, statusFilter } = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<typeof action>();
   const [filter, setFilter] = useState(statusFilter);
+  const [selectedEnquiryId, setSelectedEnquiryId] = useState<string | null>(null);
+
+  const selectedEnquiry = useMemo(
+    () => enquiries.find((enquiry) => enquiry.id === selectedEnquiryId) ?? null,
+    [enquiries, selectedEnquiryId],
+  );
 
   const handleStatusChange = (enquiryId: string, status: string) => {
     const formData = new FormData();
+    formData.append("intent", "update-status");
     formData.append("enquiryId", enquiryId);
     formData.append("status", status);
     fetcher.submit(formData, { method: "POST" });
+  };
+
+  const handleDelete = (enquiryId: string) => {
+    if (!window.confirm("Delete this enquiry? This cannot be undone.")) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("intent", "delete");
+    formData.append("enquiryId", enquiryId);
+    fetcher.submit(formData, { method: "POST" });
+
+    if (selectedEnquiryId === enquiryId) {
+      setSelectedEnquiryId(null);
+    }
   };
 
   const rows = enquiries.map((enquiry) => [
@@ -80,34 +124,40 @@ export default function Enquiries() {
       month: "short",
       year: "numeric",
     }),
-    enquiry.productTitle || enquiry.productHandle || "—",
+    enquiry.productTitle || "—",
     enquiry.name,
     enquiry.email,
     enquiry.phone || "—",
     enquiry.quantity?.toString() || "—",
-    enquiry.comments
-      ? enquiry.comments.length > 60
-        ? enquiry.comments.substring(0, 60) + "…"
-        : enquiry.comments
-      : "—",
     <Badge
-      key={enquiry.id + "-badge"}
+      key={`${enquiry.id}-badge`}
       tone={enquiry.status === "new" ? "attention" : "success"}
     >
       {enquiry.status === "new" ? "New" : "Reviewed"}
     </Badge>,
-    <Button
-      key={enquiry.id + "-btn"}
-      size="slim"
-      onClick={() =>
-        handleStatusChange(
-          enquiry.id,
-          enquiry.status === "new" ? "reviewed" : "new"
-        )
-      }
-    >
-      {enquiry.status === "new" ? "Mark Reviewed" : "Mark New"}
-    </Button>,
+    <InlineStack key={`${enquiry.id}-actions`} gap="200" wrap={false}>
+      <Button size="slim" onClick={() => setSelectedEnquiryId(enquiry.id)}>
+        View
+      </Button>
+      <Button
+        size="slim"
+        onClick={() =>
+          handleStatusChange(
+            enquiry.id,
+            enquiry.status === "new" ? "reviewed" : "new",
+          )
+        }
+      >
+        {enquiry.status === "new" ? "Mark Reviewed" : "Mark New"}
+      </Button>
+      <Button
+        size="slim"
+        tone="critical"
+        onClick={() => handleDelete(enquiry.id)}
+      >
+        Delete
+      </Button>
+    </InlineStack>,
   ]);
 
   return (
@@ -157,7 +207,6 @@ export default function Enquiries() {
                     "numeric",
                     "text",
                     "text",
-                    "text",
                   ]}
                   headings={[
                     "Date",
@@ -166,9 +215,8 @@ export default function Enquiries() {
                     "Email",
                     "Phone",
                     "Qty",
-                    "Comments",
                     "Status",
-                    "Action",
+                    "Actions",
                   ]}
                   rows={rows}
                   truncate
@@ -178,6 +226,102 @@ export default function Enquiries() {
           </Card>
         </Layout.Section>
       </Layout>
+
+      <Modal
+        open={Boolean(selectedEnquiry)}
+        onClose={() => setSelectedEnquiryId(null)}
+        title={selectedEnquiry?.productTitle || "Enquiry details"}
+        primaryAction={{
+          content:
+            selectedEnquiry?.status === "new" ? "Mark Reviewed" : "Mark New",
+          onAction: () => {
+            if (!selectedEnquiry) return;
+            handleStatusChange(
+              selectedEnquiry.id,
+              selectedEnquiry.status === "new" ? "reviewed" : "new",
+            );
+          },
+        }}
+        secondaryActions={[
+          {
+            content: "Delete",
+            destructive: true,
+            onAction: () => {
+              if (!selectedEnquiry) return;
+              handleDelete(selectedEnquiry.id);
+            },
+          },
+        ]}
+      >
+        <Modal.Section>
+          {selectedEnquiry ? (
+            <BlockStack gap="400">
+              <InlineStack align="space-between">
+                <Text as="p" variant="headingSm">
+                  Status
+                </Text>
+                <Badge
+                  tone={selectedEnquiry.status === "new" ? "attention" : "success"}
+                >
+                  {selectedEnquiry.status === "new" ? "New" : "Reviewed"}
+                </Badge>
+              </InlineStack>
+              <Divider />
+              <BlockStack gap="300">
+                <DetailRow
+                  label="Submitted"
+                  value={new Date(selectedEnquiry.createdAt).toLocaleString()}
+                />
+                <DetailRow
+                  label="Product"
+                  value={selectedEnquiry.productTitle || "—"}
+                />
+                <DetailRow
+                  label="Product ID"
+                  value={
+                    selectedEnquiry.productId ||
+                    selectedEnquiry.productHandle ||
+                    "—"
+                  }
+                />
+                <DetailRow label="Customer name" value={selectedEnquiry.name} />
+                <DetailRow label="Email" value={selectedEnquiry.email} />
+                <DetailRow label="Phone" value={selectedEnquiry.phone || "—"} />
+                <DetailRow
+                  label="Quantity"
+                  value={selectedEnquiry.quantity?.toString() || "—"}
+                />
+                <DetailRow
+                  label="Comments"
+                  value={selectedEnquiry.comments || "—"}
+                  multiline
+                />
+              </BlockStack>
+            </BlockStack>
+          ) : null}
+        </Modal.Section>
+      </Modal>
     </Page>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+}) {
+  return (
+    <BlockStack gap="100">
+      <Text as="p" variant="bodySm" tone="subdued">
+        {label}
+      </Text>
+      <Text as="p" variant="bodyMd" breakWord={multiline}>
+        {value}
+      </Text>
+    </BlockStack>
   );
 }

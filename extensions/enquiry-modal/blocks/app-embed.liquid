@@ -7,6 +7,8 @@
 <script>
   window.ENQUIRY_APP_URL = {{ settings.app_url | default: "https://enquireit-production.up.railway.app" | json }};
   window.ENQUIRY_SHOP_DOMAIN = {{ shop.permanent_domain | json }};
+  window.ENQUIRY_MODAL_TITLE = {{ settings.modal_title | default: "Product Enquiry" | json }};
+  window.ENQUIRY_MODAL_SUBTITLE = {{ settings.modal_subtitle | default: "Fill in your details and we'll get back to you." | json }};
 </script>
 
 {% schema %}
@@ -50,7 +52,7 @@
     },
     {
       "type": "paragraph",
-      "content": "To add an enquiry button anywhere in your theme, add the attribute **data-enquiry-trigger** to any HTML element. To pre-fill a specific product, use **data-enquiry-trigger=\"product-handle\"** where 'product-handle' is the product's URL handle."
+      "content": "To add an enquiry button anywhere in your theme, add the attribute **data-enquiry-trigger** to any HTML element. To pre-fill a specific product, use **data-enquiry-trigger=\"{{ product.id }}\"** and optionally **data-enquiry-product-title=\"{{ product.title }}\"**."
     }
   ]
 }
