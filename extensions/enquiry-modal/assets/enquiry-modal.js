@@ -74,6 +74,15 @@
     commentsInput.value = buildPrefilledComment(currentProductTitle);
   }
 
+  function setSubtitleVisible(isVisible) {
+    if (!overlayEl) return;
+
+    var subtitleEl = overlayEl.querySelector(".em-modal__subtitle");
+    if (!subtitleEl) return;
+
+    subtitleEl.style.display = isVisible ? "" : "none";
+  }
+
   // ── Modal HTML ──────────────────────────────────────────────────────────────
 
   function createModal() {
@@ -238,6 +247,7 @@
   function openModal(productRef, productTitle) {
     ensureModal();
     resetForm();
+    setSubtitleVisible(true);
 
     var prefillProduct = normalizePrefillProduct(productRef, productTitle);
 
@@ -325,6 +335,7 @@
     var successContainer = overlayEl && overlayEl.querySelector("#em-success-container");
     if (formContainer) formContainer.style.display = "";
     if (successContainer) successContainer.style.display = "none";
+    setSubtitleVisible(true);
   }
 
   // ── Autocomplete ─────────────────────────────────────────────────────────────
@@ -685,6 +696,7 @@
     var successContainer = overlayEl.querySelector("#em-success-container");
     if (formContainer) formContainer.style.display = "none";
     if (successContainer) successContainer.style.display = "block";
+    setSubtitleVisible(false);
 
     // Scroll to top of modal
     if (modalEl) modalEl.scrollTop = 0;
