@@ -57,7 +57,7 @@
   box-shadow: var(--em-shadow);
   width: 100%;
   max-width: 520px;
-  max-height: calc(100vh - 32px);
+  max-height: calc(100vh - 48px);
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
@@ -91,7 +91,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 24px 0;
+  padding: 18px 20px 0;
   gap: 16px;
 }
 
@@ -107,7 +107,7 @@
 .em-modal__subtitle {
   font-size: 14px;
   color: var(--em-text-muted);
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   font-family: var(--em-font);
 }
 
@@ -143,7 +143,7 @@
 /* ── Modal Body ───────────────────────────────────────────── */
 
 .em-modal__body {
-  padding: 20px 24px 24px;
+  padding: 16px 20px 20px;
 }
 
 /* ── Form ─────────────────────────────────────────────────── */
@@ -151,19 +151,28 @@
 .em-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .em-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .em-field--row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.em-field--row-compact {
+  grid-template-columns: minmax(0, 1fr) 120px;
+  align-items: end;
+}
+
+.em-field--quantity .em-input {
+  text-align: center;
 }
 
 .em-label {
@@ -217,8 +226,8 @@
 
 .em-textarea {
   resize: vertical;
-  min-height: 80px;
-  max-height: 200px;
+  min-height: 64px;
+  max-height: 160px;
 }
 
 .em-input--error,
@@ -509,6 +518,11 @@
   .em-field--row {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .em-field--row-compact {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .em-modal__header {

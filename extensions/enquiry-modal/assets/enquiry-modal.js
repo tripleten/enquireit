@@ -57,6 +57,23 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
+  function buildPrefilledComment(productTitle) {
+    if (productTitle) {
+      return 'I would like to get a quote for the product: "' + productTitle + '" here.';
+    }
+
+    return "I would like to get a quote for this product here.";
+  }
+
+  function applyPrefilledComment() {
+    if (!overlayEl) return;
+
+    var commentsInput = overlayEl.querySelector("#em-comments");
+    if (!commentsInput) return;
+
+    commentsInput.value = buildPrefilledComment(currentProductTitle);
+  }
+
   // ── Modal HTML ──────────────────────────────────────────────────────────────
 
   function createModal() {
@@ -81,35 +98,38 @@
       '  <div class="em-modal__body">',
       '    <div id="em-form-container">',
       '      <form class="em-form" id="em-enquiry-form" novalidate>',
-      '        <div class="em-field">',
-      '          <label class="em-label" for="em-product">Product</label>',
-      '          <div class="em-autocomplete" id="em-autocomplete">',
+      '        <div class="em-field--row em-field--row-compact">',
+      '          <div class="em-field">',
+      '            <label class="em-label" for="em-product">Product Title</label>',
+      '            <div class="em-autocomplete" id="em-autocomplete">',
+      '              <input',
+      '                class="em-input"',
+      '                type="text"',
+      '                id="em-product"',
+      '                name="productTitle"',
+      '                placeholder="Search for a product…"',
+      '                autocomplete="off"',
+      '                aria-autocomplete="list"',
+      '                aria-controls="em-autocomplete-dropdown"',
+      '                aria-expanded="false"',
+      '              />',
+      '              <input type="hidden" id="em-product-id" name="productId" />',
+      '              <div class="em-autocomplete__dropdown" id="em-autocomplete-dropdown" role="listbox"></div>',
+      '            </div>',
+      '          </div>',
+      '          <div class="em-field em-field--quantity">',
+      '            <label class="em-label" for="em-quantity">Quantity</label>',
       '            <input',
       '              class="em-input"',
-      '              type="text"',
-      '              id="em-product"',
-      '              name="productTitle"',
-      '              placeholder="Search for a product…"',
-      '              autocomplete="off"',
-      '              aria-autocomplete="list"',
-      '              aria-controls="em-autocomplete-dropdown"',
-      '              aria-expanded="false"',
+      '              type="number"',
+      '              id="em-quantity"',
+      '              name="quantity"',
+      '              min="1"',
+      '              max="50"',
+      '              placeholder="1"',
+      '              value="1"',
       '            />',
-      '            <input type="hidden" id="em-product-id" name="productId" />',
-      '            <div class="em-autocomplete__dropdown" id="em-autocomplete-dropdown" role="listbox"></div>',
       '          </div>',
-      '        </div>',
-      '        <div class="em-field">',
-      '          <label class="em-label" for="em-quantity">Quantity</label>',
-      '          <input',
-      '            class="em-input"',
-      '            type="number"',
-      '            id="em-quantity"',
-      '            name="quantity"',
-      '            min="1"',
-      '            placeholder="1"',
-      '            value="1"',
-      '          />',
       '        </div>',
       '        <div class="em-divider"></div>',
       '        <div class="em-field--row">',
@@ -158,7 +178,7 @@
       '            id="em-comments"',
       '            name="comments"',
       '            placeholder="Tell us more about your enquiry…"',
-      '            rows="3"',
+      '            rows="2"',
       '          ></textarea>',
       '        </div>',
       '        <div id="em-submit-error" style="display:none;"></div>',
@@ -233,6 +253,8 @@
       productInput.disabled = true;
     }
 
+    applyPrefilledComment();
+
     // Show modal
     overlayEl.classList.add("em-is-open");
     document.body.style.overflow = "hidden";
@@ -271,6 +293,7 @@
       productInput.classList.remove("em-input--error");
     }
     if (productIdInput) productIdInput.value = "";
+    applyPrefilledComment();
 
     // Clear errors
     var errorEls = overlayEl && overlayEl.querySelectorAll(".em-field-error");
@@ -417,6 +440,7 @@
 
     currentProductId = productId || null;
     currentProductTitle = title || productId;
+    applyPrefilledComment();
 
     closeAutocomplete();
   }
@@ -479,6 +503,7 @@
       if (productIdInput) productIdInput.value = "";
       currentProductId = null;
       currentProductTitle = null;
+      applyPrefilledComment();
 
       if (query.length < MIN_SEARCH_CHARS) {
         closeAutocomplete();
@@ -521,6 +546,15 @@
       setTimeout(closeAutocomplete, 150);
     });
 
+    var quantityInput = overlayEl.querySelector("#em-quantity");
+    quantityInput.addEventListener("input", function () {
+      var quantity = parseInt(this.value, 10);
+
+      if (!this.value || Number.isNaN(quantity)) return;
+      if (quantity < 1) this.value = "1";
+      if (quantity > 50) this.value = "50";
+    });
+
     // Form submit
     overlayEl.querySelector("#em-enquiry-form").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -535,6 +569,8 @@
 
     var name = overlayEl.querySelector("#em-name").value.trim();
     var email = overlayEl.querySelector("#em-email").value.trim();
+    var quantityInput = overlayEl.querySelector("#em-quantity");
+    var quantity = parseInt(quantityInput.value, 10);
     var nameError = overlayEl.querySelector("#em-name-error");
     var emailError = overlayEl.querySelector("#em-email-error");
     var nameInput = overlayEl.querySelector("#em-name");
@@ -557,6 +593,12 @@
       emailInput.classList.add("em-input--error");
       emailError.textContent = "Please enter a valid email address";
       emailError.style.display = "flex";
+      valid = false;
+    }
+
+    quantityInput.classList.remove("em-input--error");
+    if (Number.isNaN(quantity) || quantity < 1 || quantity > 50) {
+      quantityInput.classList.add("em-input--error");
       valid = false;
     }
 
